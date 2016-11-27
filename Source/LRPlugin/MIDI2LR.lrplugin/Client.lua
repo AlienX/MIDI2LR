@@ -427,8 +427,14 @@ LrTasks.startAsyncTask(
           if ProgramPreferences.ClientShowBezelOnChange then
             LrDialogs.showBezel(param..'  '..LrStringUtils.numberToStringWithSeparators(value,Ut.precision(value)))
           end
-          if ParamList.ProfileMap[param] then
-            Profiles.changeProfile(ParamList.ProfileMap[param])
+          local profile = ParamList.ProfileMap[param]
+          if profile then
+            --added to take care of LR bug--it doesn't reveal proper panel
+            if ProgramPreferences.RevealAdjustedControls then --may be nil or false
+              UT.fChangePanel(profile)
+            else
+              Profiles.changeProfile(profile)
+            end
           end
         else --failed pickup
           if ProgramPreferences.ClientShowBezelOnChange then -- failed pickup. do I display bezel?
@@ -458,8 +464,14 @@ LrTasks.startAsyncTask(
       if ProgramPreferences.ClientShowBezelOnChange then
         LrDialogs.showBezel(param..'  '..LrStringUtils.numberToStringWithSeparators(value,Ut.precision(value)))
       end
-      if ParamList.ProfileMap[param] then
-        Profiles.changeProfile(ParamList.ProfileMap[param])
+      local profile = ParamList.ProfileMap[param]
+      if profile then
+        --added to take care of LR bug--it doesn't reveal proper panel
+        if ProgramPreferences.RevealAdjustedControls then --may be nil or false
+          UT.fChangePanel(profile)
+        else
+          Profiles.changeProfile(profile)
+        end
       end
     end
     UpdateParam = UpdateParamPickup --initial state
@@ -521,7 +533,13 @@ LrTasks.startAsyncTask(
               if(ACTIONS[param]) then -- perform a one time action
                 if(tonumber(value) > BUTTON_ON) then ACTIONS[param]() end
               elseif(param:find('Reset') == 1) then -- perform a reset other than those explicitly coded in ACTIONS array
-                if(tonumber(value) > BUTTON_ON) then Ut.execFOM(LrDevelopController.resetToDefault,param:sub(6)) end
+                if(tonumber(value) > BUTTON_ON) then 
+                  Ut.execFOM(LrDevelopController.resetToDefault,param:sub(6)) 
+                  local profile = ParamList.ProfileMap[param]
+                  if profile and ProgramPreferences.RevealAdjustedControls then 
+                    UT.fChangePanel(profile)
+                  end
+                end
               elseif(SETTINGS[param]) then -- do something requiring the transmitted value to be known
                 SETTINGS[param](value)
               else -- otherwise update a develop parameter
@@ -558,9 +576,11 @@ LrTasks.startAsyncTask(
           guardsetting:performWithGuard(Profiles.checkProfile)
         end --sleep away until ended or until develop module activated
         if MIDI2LR.RUNNING then --didn't drop out of loop because of program termination
-          if ProgramPreferences.RevealAdjustedControls then --may be nil or false
-            LrDevelopController.revealAdjustedControls( true ) -- reveal affected parameter in panel track
-          end
+          --inactivated following code due to LR bug with Transform panel
+          --once that bug is fixed, remove reveal panel code from UpdateParamNoPickup/UpdateParamPickup
+          --if ProgramPreferences.RevealAdjustedControls then --may be nil or false
+          --  LrDevelopController.revealAdjustedControls( true ) -- reveal affected parameter in panel track
+          --end
           if ProgramPreferences.TrackingDelay ~= nil then
             LrDevelopController.setTrackingDelay(ProgramPreferences.TrackingDelay)
           end
